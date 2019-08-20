@@ -27,6 +27,8 @@ import (
 	"strconv"
 	"time"
 
+	gogotypes "github.com/gogo/protobuf/types"
+
 	policy "istio.io/api/policy/v1beta1"
 
 	"istio.io/istio/mixer/template/metric"
@@ -63,6 +65,14 @@ func (j *JobRequest) sendInsightEvents() {
 			buffer.WriteString(`"metricValue":` + fmt.Sprintf("%v", valueType.DoubleValue))
 		case *policy.Value_BoolValue:
 			buffer.WriteString(`"metricValue":"` + strconv.FormatBool(valueType.BoolValue) + `"`)
+		case *policy.Value_DurationValue:
+			duration, err := gogotypes.DurationFromProto(valueType.DurationValue.Value)
+			if err != nil {
+				fmt.Println("err: " + string(err.Error()))
+				buffer.WriteString(`"metricValue":"` + fmt.Sprintf("%v", instValue) + `"`)
+			} else {
+				buffer.WriteString(`"metricValue":"` + fmt.Sprintf("%v", duration.Seconds()))
+			}
 		default:
 			buffer.WriteString(`"metricValue":"` + fmt.Sprintf("%v", instValue) + `"`)
 		}
@@ -77,6 +87,14 @@ func (j *JobRequest) sendInsightEvents() {
 				buffer.WriteString(`,"` + string(key) + `":` + fmt.Sprintf("%v", dtype.DoubleValue))
 			case *policy.Value_BoolValue:
 				buffer.WriteString(`,"` + string(key) + `":"` + strconv.FormatBool(dtype.BoolValue) + `"`)
+			case *policy.Value_DurationValue:
+				duration, err := gogotypes.DurationFromProto(dtype.DurationValue.Value)
+				if err != nil {
+					fmt.Println("err: " + string(err.Error()))
+					buffer.WriteString(`,"` + string(key) + `":"` + fmt.Sprintf("%v", value.GetValue()) + `"`)
+				} else {
+					buffer.WriteString(`,"` + string(key) + `":` + fmt.Sprintf("%v", duration.Seconds()))
+				}
 			default:
 				buffer.WriteString(`,"` + string(key) + `":"` + fmt.Sprintf("%v", value.GetValue()) + `"`)
 			}
